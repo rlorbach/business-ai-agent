@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Assistant Chat Widget (demo)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <h1>Chat Widget Demo (Flowchart)</h1>
+    <p>Open the widget in the bottom-right to begin the flow.</p>
+  </div>
+
+  <div id="chat-widget" class="chat-closed">
+    <div id="chat-toggle" class="chat-toggle">AI Assistant</div>
+    <div id="chat-panel" class="chat-panel" aria-hidden="true">
+      <div class="chat-header">AI Assistant</div>
+      <div id="messages" class="messages"></div>
+      <div id="controls" class="controls"></div>
+    </div>
+  </div>
+
+  <script src="widget.js"></script>
+</body>
+</html>
