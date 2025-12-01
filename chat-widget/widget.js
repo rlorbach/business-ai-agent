@@ -30,7 +30,7 @@
   function makeInput(placeholder, onSubmit){ const inp=document.createElement('input'); inp.className='input'; inp.placeholder=placeholder; inp.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && inp.value.trim()){ onSubmit(inp.value.trim()); inp.value=''; }}); return inp; }
 
   // Flow implementation
-  function runStart(){ state='start'; pushAgent('Hi — are you interested in a Website or AI?');
+  function runStart(){ state='start'; pushAgent('Hi — are you interested in website improvements or AI efficiencies?');
     const b1 = makeBtn('Website','', ()=>{ pushUser('Website'); runWebsiteStep1(); });
     const b2 = makeBtn('AI','', ()=>{ pushUser('AI'); runAIStep1(); });
     const b3 = makeBtn('Something else','', ()=>{ pushUser('Something else'); window.open('https://lorbachdigital.com/contact/', '_blank'); pushAgent('Opening contact page...'); });
