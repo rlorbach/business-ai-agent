@@ -120,7 +120,7 @@
   // Streaming call to backend proxy; returns a function to cancel the stream
   async function callLLMStream(prompt, onChunk){
     // Get backend URL from config or default to same origin
-    const backendBaseUrl = window.CHAT_BACKEND_URL || '';
+    const backendBaseUrl = (window.CHAT_BACKEND_URL || '').replace(/\/$/, ''); // Remove trailing slash
     
     // If WebSocket forwarding enabled, use WS for lower latency
     if (window.USE_WS && window.PROXY_TOKEN){
