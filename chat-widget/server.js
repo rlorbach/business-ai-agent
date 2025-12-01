@@ -22,8 +22,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve static files (HTML, CSS, JS)
+app.use(express.static(__dirname));
+
 // Health check endpoint
-app.get('/', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'AI Chat Widget Backend is running', endpoints: ['/api/llm', '/api/llm-stream', '/ws'] });
 });
 
