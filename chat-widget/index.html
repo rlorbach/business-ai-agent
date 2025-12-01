@@ -21,6 +21,14 @@
     </div>
   </div>
 
+  <script>
+    // Widget configuration - set these variables before loading widget.js
+    // To enable backend LLM integration, set USE_LLM = true and configure backend URL + token
+    window.USE_LLM = false;  // Set to true when backend is running
+    window.USE_WS = false;   // Set to true for WebSocket streaming (requires backend)
+    window.CHAT_BACKEND_URL = '';  // e.g., 'http://localhost:8787' or leave empty for same origin
+    window.PROXY_TOKEN = '';  // Your proxy token from .env (keep secret in production!)
+  </script>
   <script src="widget.js"></script>
 </body>
 </html>
