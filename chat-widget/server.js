@@ -22,6 +22,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'AI Chat Widget Backend is running', endpoints: ['/api/llm', '/api/llm-stream', '/ws'] });
+});
+
 // Simple proxy auth middleware: require `Authorization: Bearer <PROXY_TOKEN>` or header `x-api-key`
 function requireProxyAuth(req, res, next){
   const token = process.env.PROXY_TOKEN;
