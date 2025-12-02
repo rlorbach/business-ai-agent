@@ -6,6 +6,8 @@
   const messages = document.getElementById('messages');
   const controls = document.getElementById('controls');
 
+  const TIMEOUT_MS = 30000; // 30 second timeout for backend calls
+
   let state = 'start';
 
   function open(){widget.classList.remove('chat-closed');panel.setAttribute('aria-hidden','false');}
@@ -44,7 +46,7 @@
     setControls(nodes);
   }
 
-  function runWebsiteImprovements(choice){ state='website_improvements';
+  function runWebsiteImprovements(choice, retryCount = 0){ state='website_improvements';
     // If a server proxy is available (see README), call it for richer responses.
     const useBackend = !!window.USE_LLM;
     if (!useBackend) {
@@ -60,7 +62,8 @@
     }
 
     // backend-enabled path — request a tailored answer from server (streamed)
-    pushAgent('Generating tailored recommendations...');
+    const loadingMsg = retryCount > 0 ? 'Retrying...' : 'Generating tailored recommendations...';
+    pushAgent(loadingMsg);
     (async ()=>{
       const prompt = `Provide 6 concise technical improvements for a website that is ${choice}. Present them as numbered bullet points.`;
       const el = createAgentStreamMessage(); let buffer = '';
@@ -68,7 +71,20 @@
         const stream = await callLLMStream(prompt, (chunk)=>{ buffer += chunk; el.innerText = buffer; messages.scrollTop = messages.scrollHeight; });
         await stream.finished;
         setTimeout(()=>{ pushAgent('Would you like us to contact you to get started?'); const yes = makeBtn('Yes','primary', ()=>{ pushUser('Yes'); window.open('https://lorbachdigital.com/contact/', '_blank'); pushAgent('Opening contact page...'); }); const no = makeBtn('No','', ()=>{ pushUser('No'); pushAgent('No problem — feel free to re-open this chat anytime.'); setControls([]); }); const restart = makeBtn('Start Over','', ()=>{ messages.innerHTML=''; setControls([]); runStart(); }); setControls([yes,no,restart]); }, 350);
-      } catch (err){ pushAgent('Sorry — I failed to fetch recommendations. Showing defaults.'); console.error(err); window.USE_LLM = false; runWebsiteImprovements(choice); }
+      } catch (err){ 
+        console.error('Backend error:', err);
+        el.remove(); // Remove the empty streaming message
+        if (retryCount < 2) {
+          pushAgent(`Connection issue. Let me try again...`);
+          const retry = makeBtn('Try Again Now', 'primary', ()=>{ setControls([]); runWebsiteImprovements(choice, retryCount + 1); });
+          const fallback = makeBtn('Show Default Results', '', ()=>{ setControls([]); window.USE_LLM = false; runWebsiteImprovements(choice); });
+          setControls([retry, fallback]);
+        } else {
+          pushAgent('Unable to connect to backend. Showing default recommendations.');
+          window.USE_LLM = false; 
+          runWebsiteImprovements(choice);
+        }
+      }
     })();
   }
 
@@ -78,7 +94,7 @@
     setControls([inp]); inp.focus();
   }
 
-  function runAIBenefits(btype){ state='ai_benefits';
+  function runAIBenefits(btype, retryCount = 0){ state='ai_benefits';
     const useBackend = !!window.USE_LLM;
     if (!useBackend) {
       const key = btype.toLowerCase();
@@ -93,7 +109,8 @@
     }
 
     // backend-enabled path — request tailored benefits
-    pushAgent('Fetching tailored benefits...');
+    const loadingMsg = retryCount > 0 ? 'Retrying...' : 'Fetching tailored benefits...';
+    pushAgent(loadingMsg);
     (async ()=>{
       const prompt = `List 6 concise benefits of using AI for a ${btype} business, formatted as numbered bullet points.`;
       const el = createAgentStreamMessage(); let buffer = '';
@@ -101,7 +118,20 @@
         const stream = await callLLMStream(prompt, (chunk)=>{ buffer += chunk; el.innerText = buffer; messages.scrollTop = messages.scrollHeight; });
         await stream.finished;
         setTimeout(()=>{ pushAgent('Would you like us to contact you to get started?'); const yes = makeBtn('Yes','primary', ()=>{ pushUser('Yes'); window.open('https://lorbachdigital.com/contact/', '_blank'); pushAgent('Opening contact page...'); }); const no = makeBtn('No','', ()=>{ pushUser('No'); pushAgent('Alright — close the chat and reach out anytime.'); setControls([]); }); const restart = makeBtn('Start Over','', ()=>{ messages.innerHTML=''; setControls([]); runStart(); }); setControls([yes,no,restart]); }, 350);
-      } catch (err){ pushAgent('Sorry — I failed to fetch AI recommendations. Showing defaults.'); console.error(err); window.USE_LLM = false; runAIBenefits(btype); }
+      } catch (err){ 
+        console.error('Backend error:', err);
+        el.remove(); // Remove the empty streaming message
+        if (retryCount < 2) {
+          pushAgent(`Connection issue. Let me try again...`);
+          const retry = makeBtn('Try Again Now', 'primary', ()=>{ setControls([]); runAIBenefits(btype, retryCount + 1); });
+          const fallback = makeBtn('Show Default Results', '', ()=>{ setControls([]); window.USE_LLM = false; runAIBenefits(btype); });
+          setControls([retry, fallback]);
+        } else {
+          pushAgent('Unable to connect to backend. Showing default recommendations.');
+          window.USE_LLM = false; 
+          runAIBenefits(btype);
+        }
+      }
     })();
   }
 
@@ -119,6 +149,14 @@
 
   // Streaming call to backend proxy; returns a function to cancel the stream
   async function callLLMStream(prompt, onChunk){
+    return Promise.race([
+      callLLMStreamInternal(prompt, onChunk),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), TIMEOUT_MS))
+    ]);
+  }
+
+  // Internal streaming implementation
+  async function callLLMStreamInternal(prompt, onChunk){
     // Get backend URL from config or default to same origin
     const backendBaseUrl = (window.CHAT_BACKEND_URL || '').replace(/\/$/, ''); // Remove trailing slash
     
